@@ -1,0 +1,177 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#14532d"><link rel="manifest" href="manifest.json"><link rel="icon" href="icon-192.png"><title>Ghar Kharcha</title>
+<style>
+:root{--p:#14532d;--bg:#f3f1ea;--c:#fffdf8;--t:#1c1917;--m:#78716c;--b:#e4dfd3;--a:#b45309}
+[data-t=dark]{--p:#4ade80;--bg:#0f1210;--c:#181d19;--t:#e7e5e4;--m:#a8a29e;--b:#2a322c;--a:#fbbf24}
+*{box-sizing:border-box}body{margin:0;font:15px/1.4 system-ui,sans-serif;background:var(--bg);color:var(--t);padding-bottom:calc(72px + env(safe-area-inset-bottom))}
+main{max-width:640px;margin:auto;padding:12px;padding-top:calc(12px + env(safe-area-inset-top))}
+h1{font:700 30px Georgia,serif;margin:4px 0}h2{font:700 20px Georgia,serif;margin:4px 0}h3{margin:0 0 8px;font:700 16px Georgia,serif}
+.card{background:var(--c);border:1px solid var(--b);border-radius:12px;padding:14px;margin-bottom:12px}
+.g{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}.g .card{margin:0}.g b{font-size:16px}
+.mu,small{color:var(--m)}small{font-size:12px}
+input,select,textarea{width:100%;padding:12px;margin:4px 0;border:1px solid var(--b);border-radius:8px;background:var(--c);color:var(--t);font:inherit}
+button{font:inherit;border:1px solid var(--b);background:var(--c);color:var(--t);border-radius:8px;padding:10px 12px}
+.bt{background:var(--p);color:var(--bg);border:0;font-weight:700}.full{width:100%;margin-top:8px}.dg{color:#dc2626}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--c);border-top:1px solid var(--b);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;border:0;border-radius:0;background:none;font-size:11px;color:var(--m);padding:8px 0}nav span{display:block;font-size:20px}nav .on{color:var(--p);font-weight:700}
+.row{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--b)}.row>span{flex:1}.row button{padding:6px 8px}
+.dot{width:10px;height:10px;border-radius:50%;flex:none}
+.pg{height:8px;background:var(--b);border-radius:4px;overflow:hidden;margin:4px 0}.pg i{display:block;height:100%;background:var(--p)}
+.bars{display:flex;gap:3px;align-items:flex-end;height:120px;overflow-x:auto}.bars>div{flex:1;min-width:26px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center}
+.bars i{width:70%;border-radius:3px 3px 0 0;min-height:2px;background:var(--p)}.bars small,.bars em{font-size:9px;font-style:normal;color:var(--m)}
+.hb{margin:6px 0}.hb span{font-size:13px}.hb b{float:right;font-size:13px}
+.dn{width:150px;height:150px;border-radius:50%;margin:8px auto;-webkit-mask:radial-gradient(circle,transparent 48%,#000 50%);mask:radial-gradient(circle,transparent 48%,#000 50%)}
+.lg{font-size:13px;display:flex;gap:6px;align-items:center}.lg i{width:10px;height:10px;border-radius:2px}.lg b{margin-left:auto}
+.chips{display:flex;gap:6px;overflow-x:auto;margin:6px 0}.chips button{white-space:nowrap}
+.modal{position:fixed;inset:0;background:#0008;display:flex;align-items:flex-end;z-index:9}.modal[hidden]{display:none}
+.modal>div{background:var(--bg);width:100%;max-height:90%;overflow:auto;border-radius:16px 16px 0 0;padding:16px;max-width:640px;margin:auto}
+#t{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:var(--p);color:var(--bg);padding:8px 16px;border-radius:20px;z-index:10}#t[hidden]{display:none}
+</style></head><body><main id="v"></main><nav id="nav"></nav><div id="m" class="modal" hidden onclick="if(event.target==this)cl()"><div id="mb"></div></div><div id="t" hidden></div>
+<script>
+const $=s=>document.querySelector(s),E=s=>(s+'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let D,cats=[],txs=[],S={},tab='dash',per='month',custom=['',''],F=null,cq='',H={q:'',c:'',lo:'',hi:'',s:'n'};
+const pal=['#15803d','#b45309','#0369a1','#be123c','#7c3aed','#0f766e','#a16207','#4d7c0f','#c2410c'];
+const R=(s,m='readonly')=>D.transaction(s,m).objectStore(s),rq=r=>new Promise((o,e)=>{r.onsuccess=()=>o(r.result);r.onerror=()=>e(r.error)});
+const all=s=>rq(R(s).getAll()),put=(s,o)=>rq(R(s,'readwrite').put(o)),rm=(s,i)=>rq(R(s,'readwrite').delete(i));
+const save=()=>put('kv',{k:'s',v:S}),load=async()=>{cats=await all('cats');txs=await all('tx');const k=(await all('kv'))[0];S=k?k.v:{}};
+// dates (Asia/Karachi, stored YYYY-MM-DD, shown DD-MM-YYYY)
+const fz=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Karachi'}),today=()=>fz.format(new Date());
+const U=s=>Date.parse(s+'T00:00:00Z'),Z=t=>new Date(t).toISOString().slice(0,10),da=(s,n)=>Z(U(s)+n*864e5),dd=s=>s.split('-').reverse().join('-');
+const mon=s=>da(s,-((new Date(U(s)).getUTCDay()+6)%7)),som=s=>s.slice(0,8)+'01',eom=s=>{const d=new Date(U(s));return Z(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,0))};
+const addM=(s,n)=>{const d=new Date(U(s));return Z(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+n,1))},days=(a,b)=>(U(b)-U(a))/864e5+1;
+const range=p=>{const t=today();switch(p){case'today':return[t,t];case'yest':return[da(t,-1),da(t,-1)];case'week':return[mon(t),da(mon(t),6)];case'lweek':return[da(mon(t),-7),da(mon(t),-1)];case'month':return[som(t),eom(t)];case'lmonth':{const a=addM(t,-1);return[a,eom(a)]}case'3m':return[addM(som(t),-2),eom(t)];case'6m':return[addM(som(t),-5),eom(t)];case'year':return[t.slice(0,4)+'-01-01',t.slice(0,4)+'-12-31'];case'lyear':{const y=+t.slice(0,4)-1;return[y+'-01-01',y+'-12-31']}default:return[custom[0]||t,custom[1]||custom[0]||t]}};
+// data helpers
+const M=n=>(S.cur||'PKR')+' '+Number(n||0).toLocaleString('en-PK',{maximumFractionDigits:2}),sh=n=>n>=1e3?(n/1e3).toFixed(n>=1e4?0:1)+'k':Math.round(n);
+const kids=id=>cats.filter(c=>c.p==id).sort((a,b)=>a.o-b.o),cat=id=>cats.find(c=>c.id==id);
+const desc=id=>{const r=new Set([id]),w=i=>kids(i).forEach(k=>{r.add(k.id);w(k.id)});w(id);return r};
+const chain=id=>{const a=[];let c=cat(id);while(c){a.unshift(c.id);c=cat(c.p)}return a},path=id=>chain(id).map(i=>cat(i).n).join(' › ');
+const inR=(a,b)=>txs.filter(t=>t.d>=a&&t.d<=b),sum=l=>l.reduce((s,t)=>s+t.a,0);
+const spent=(id,a,b)=>{const d=desc(id);return sum(inR(a,b).filter(t=>d.has(t.c)))};
+const newCat=async(n,p)=>{const id=await put('cats',{n,p,o:Date.now(),col:p?cat(p).col:pal[cats.length%pal.length],i:'',b:0});cats=await all('cats');return id};
+// widgets
+const bars=(l,v)=>{const m=Math.max(...v,1);return`<div class=bars>${l.map((x,i)=>`<div><em>${v[i]?sh(v[i]):''}</em><i style="height:${Math.round(v[i]/m*80)}px"></i><small>${E(x)}</small></div>`).join('')}</div>`};
+const hb=r=>{const m=Math.max(...r.map(x=>x[1]),1);return r.map(x=>`<div class=hb><span>${E(x[0])}</span><b>${M(x[1])}</b><div class=pg><i style="width:${x[1]/m*100}%"></i></div></div>`).join('')||'<p class=mu>No data for this period.</p>'};
+const prog=(s,b)=>{const p=b?s/b*100:0,c=p>=100?'#dc2626':p>=90?'#ea580c':p>=75?'#d97706':'#16a34a';return`<div class=pg><i style="width:${Math.min(p,100)}%;background:${c}"></i></div><small>${Math.round(p)}% used · ${b>=s?'remaining '+M(b-s):'over budget by '+M(s-b)}</small>`};
+const donut=r=>{const t=sum(r.map(x=>({a:x[1]})));if(!t)return'<p class=mu>No data for this period.</p>';let a=0;return`<div class=dn style="background:conic-gradient(${r.map(x=>{const s=a;a+=x[1]/t*100;return`${x[2]} ${s}% ${a}%`}).join(',')})"></div>`+r.map(x=>`<div class=lg><i style="background:${x[2]}"></i>${E(x[0])}<b>${Math.round(x[1]/t*100)}%</b></div>`).join('')};
+const psel=()=>`<select onchange="per=this.value;render()">${[['today','Today'],['yest','Yesterday'],['week','This week'],['lweek','Last week'],['month','This month'],['lmonth','Last month'],['3m','Last 3 months'],['6m','Last 6 months'],['year','This year'],['lyear','Last year'],['cus','Custom range']].map(o=>`<option value=${o[0]} ${per==o[0]?'selected':''}>${o[1]}</option>`).join('')}</select>`+(per=='cus'?`<div class=g><input type=date value="${custom[0]}" onchange="custom[0]=this.value;render()"><input type=date value="${custom[1]}" onchange="custom[1]=this.value;render()"></div>`:'');
+const modal=h=>{$('#mb').innerHTML=h;$('#m').hidden=false},cl=()=>{$('#m').hidden=true},toast=s=>{const t=$('#t');t.textContent=s;t.hidden=false;setTimeout(()=>t.hidden=true,1800)};
+const dl=(n,t,m)=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:m}));a.download=n;a.click()};
+// views
+function dash(){const[a,b]=range(per),t=today(),l=inR(a,b),tot=sum(l),n=days(a,b),B={today:S.bd,yest:S.bd,week:S.bw,lweek:S.bw,month:S.bm,lmonth:S.bm,year:S.by,lyear:S.by}[per]||0;
+const bd={};l.forEach(x=>bd[x.d]=(bd[x.d]||0)+x.a);const hd=Object.entries(bd).sort((x,y)=>y[1]-x[1])[0],dl_=[...Array(14)].map((_,i)=>da(t,i-13)),wk=[...Array(8)].map((_,i)=>da(mon(t),(i-7)*7)),ml=[...Array(12)].map((_,i)=>addM(som(t),i-11)),y=+t.slice(0,4),yl=[y-3,y-2,y-1,y];
+const top=cats.filter(c=>!kids(c.id).length).map(c=>[path(c.id),spent(c.id,a,b)]).filter(x=>x[1]>0).sort((x,y)=>y[1]-x[1]).slice(0,10),tp=cats.filter(c=>!c.p).map(c=>[c.n,spent(c.id,a,b),c.col]).filter(x=>x[1]>0);
+const cb=cats.filter(c=>c.b>0).map(c=>`<div class=hb><span>${E(path(c.id))}</span><b>${M(spent(c.id,som(t),eom(t)))} / ${M(c.b)}</b></div>${prog(spent(c.id,som(t),eom(t)),c.b)}`).join('');
+return`<h2>Home expenses</h2><p class=mu>Today ${dd(t)} · Period ${dd(a)} to ${dd(b)}</p>${psel()}
+${cats.length?'':'<div class=card><b>No categories yet.</b><br>Create your own in Categories, or <button class=bt onclick=seed()>load starter categories</button> (you can edit or delete them).</div>'}
+<div class=card><small>Total spending</small><h1>${M(tot)}</h1>${B?`<small>Budget ${M(B)}</small>${prog(tot,B)}`:'<small>Set budgets in Settings to see remaining budget.</small>'}</div>
+<div class=g><div class=card><small>Today</small><br><b>${M(sum(inR(t,t)))}</b></div><div class=card><small>This week</small><br><b>${M(sum(inR(mon(t),da(mon(t),6))))}</b></div><div class=card><small>This month</small><br><b>${M(sum(inR(som(t),eom(t))))}</b></div><div class=card><small>This year</small><br><b>${M(sum(inR(t.slice(0,4)+'-01-01',t.slice(0,4)+'-12-31')))}</b></div><div class=card><small>Average per day</small><br><b>${M(tot/n)}</b></div><div class=card><small>Highest day</small><br><b>${hd?M(hd[1])+' ('+dd(hd[0]).slice(0,5)+')':'-'}</b></div><div class=card><small>Transactions</small><br><b>${l.length}</b></div></div>
+${cb?`<div class=card><h3>Category budgets (this month)</h3>${cb}</div>`:''}
+<div class=card><h3>Daily, last 14 days</h3>${bars(dl_.map(d=>dd(d).slice(0,5)),dl_.map(d=>sum(inR(d,d))))}</div>
+<div class=card><h3>Weekly, last 8 weeks</h3>${bars(wk.map(d=>dd(d).slice(0,5)),wk.map(d=>sum(inR(d,da(d,6)))))}</div>
+<div class=card><h3>Monthly comparison, last 12 months</h3>${bars(ml.map(d=>d.slice(5,7)+'/'+d.slice(2,4)),ml.map(d=>sum(inR(d,eom(d)))))}</div>
+<div class=card><h3>Yearly</h3>${bars(yl,yl.map(v=>sum(inR(v+'-01-01',v+'-12-31'))))}</div>
+<div class=card><h3>Spending by category</h3>${donut(tp)}</div><div class=card><h3>Top 10 items/categories</h3>${hb(top)}</div>`}
+const crow=(c,d,f)=>`<div class=row onclick="det(${c.id})" style="margin-left:${d*14}px"><i class=dot style="background:${c.col}"></i><span>${E(c.i||'')} ${E(f?path(c.id):c.n)}${c.b?`<br><small>Budget ${M(c.b)}/month</small>`:''}</span><b>${M(spent(c.id,'0000-01-01','9999-12-31'))}</b></div>`;
+const walk=(p,d)=>kids(p).map(c=>crow(c,d)+walk(c.id,d+1)).join('');
+function catv(){const q=cq.toLowerCase();return`<h2>Categories</h2><input type=search placeholder="Search categories and products" value="${E(cq)}" onchange="cq=this.value;render()"><button class="bt full" onclick=addMain()>＋ New main category</button><div class=card style="margin-top:10px">${q?cats.filter(c=>path(c.id).toLowerCase().includes(q)).map(c=>crow(c,0,1)).join('')||'<p class=mu>No match.</p>':walk(0,0)||'<p class=mu>No categories yet.</p><button class=bt onclick=seed()>Load starter categories</button>'}</div><p class=mu>Tap a category to see totals, history and price changes. Totals include all nested items.</p>`}
+async function addMain(){const n=prompt('Main category name');if(n){await newCat(n.trim(),0);render()}}
+function det(id){const c=cat(id),d=desc(id),l=txs.filter(t=>d.has(t.c)).sort((a,b)=>b.d.localeCompare(a.d)),tot=sum(l),q=l.reduce((s,t)=>s+(+t.q||0),0),am=l.map(t=>t.a),o=[...l].reverse().slice(-12);
+modal(`<h3>${E(c.i||'')} ${E(path(id))}</h3><div class=g><div class=card><small>Total spent</small><br><b>${M(tot)}</b></div><div class=card><small>Purchases</small><br><b>${l.length}</b></div><div class=card><small>Total quantity</small><br><b>${q||'-'}</b></div><div class=card><small>Average purchase</small><br><b>${l.length?M(tot/l.length):'-'}</b></div><div class=card><small>Highest / lowest</small><br><b>${l.length?M(Math.max(...am))+' / '+M(Math.min(...am)):'-'}</b></div><div class=card><small>Last purchase</small><br><b>${l.length?dd(l[0].d):'-'}</b></div></div>
+${o.length>1?`<div class=card><h3>Price over time (unit price, else amount)</h3>${bars(o.map(t=>dd(t.d).slice(0,5)),o.map(t=>t.u||(t.q?t.a/t.q:t.a)))}</div>`:''}
+<button class=bt onclick="cl();F=null;form({c:${id}})">Add expense here</button> <button onclick="sub(${id})">＋ Sub-item</button> <button onclick="ecat(${id})">Edit</button>
+<div class=card style="margin-top:10px">${l.map(txrow).join('')||'<p class=mu>No transactions yet.</p>'}</div>`)}
+async function sub(id){const n=prompt('New item or subcategory name');if(n){await newCat(n.trim(),id);cl();det(id);render()}}
+function ecat(id){const c=cat(id),d=desc(id);modal(`<h3>Edit category</h3>Name<input id=en value="${E(c.n)}">Icon (emoji)<input id=ei value="${E(c.i||'')}">Colour<input id=ec type=color value="${c.col}">Monthly budget<input id=eb type=number inputmode=decimal value="${c.b||''}">Move under<select id=ep><option value=0>(Main category)</option>${cats.filter(x=>!d.has(x.id)).map(x=>`<option value=${x.id} ${x.id==c.p?'selected':''}>${E(path(x.id))}</option>`).join('')}</select>
+<button class="bt full" onclick=scat(${id})>Save changes</button><div class=g style="margin-top:10px"><button onclick="mv(${id},-1)">↑ Move up</button><button onclick="mv(${id},1)">↓ Move down</button></div><button class="full dg" onclick=dcat(${id})>Delete category</button>`)}
+async function scat(id){const c=cat(id);Object.assign(c,{n:$('#en').value.trim()||c.n,i:$('#ei').value,col:$('#ec').value,b:+$('#eb').value||0,p:+$('#ep').value});await put('cats',c);cats=await all('cats');cl();render();toast('Saved')}
+async function mv(id,dir){const c=cat(id),s=kids(c.p),i=s.findIndex(x=>x.id==id),j=i+dir;if(j<0||j>=s.length)return;const o=s[j].o;s[j].o=c.o;c.o=o;await put('cats',c);await put('cats',s[j]);cats=await all('cats');cl();render()}
+async function dcat(id){const d=desc(id),n=txs.filter(t=>d.has(t.c)).length;if(!confirm(`Delete "${cat(id).n}", ${d.size-1} nested items and ${n} transactions? This cannot be undone.`))return;for(const i of d)await rm('cats',i);for(const t of txs.filter(t=>d.has(t.c)))await rm('tx',t.id);await load();cl();render()}
+// add / edit expense
+function form(x){F={c:0,d:today(),...x};F.sel=F.c?chain(F.c):[];tab='add';render()}
+function grab(){if(!$('#fa'))return;Object.assign(F,{a:$('#fa').value,q:$('#fq').value,u:$('#fu').value,d:$('#fd').value,n:$('#fn').value})}
+function calc(){const q=+$('#fq').value,u=+$('#fu').value;if(q&&u)$('#fa').value=Math.round(q*u*100)/100}
+async function pick(i,v){grab();if(v=='new'){const n=prompt('Name');if(!n){render();return}const id=await newCat(n.trim(),F.sel[i-1]||0);F.sel=F.sel.slice(0,i);F.sel[i]=id}else{F.sel=F.sel.slice(0,i);if(v)F.sel[i]=+v}F.c=F.sel[F.sel.length-1]||0;render()}
+function qa(id){grab();F.c=id;F.sel=chain(id);render()}
+function addv(){F=F||{c:0,d:today(),sel:[]};let h='',p=0,i=0;for(;;){h+=`<select onchange="pick(${i},this.value)"><option value="">${i?'Subcategory / product':'Category'}</option>${kids(p).map(k=>`<option value=${k.id} ${F.sel[i]==k.id?'selected':''}>${E(k.i||'')} ${E(k.n)}</option>`).join('')}<option value=new>＋ New…</option></select>`;if(!F.sel[i])break;p=F.sel[i];i++}
+const fr=Object.entries(txs.reduce((o,t)=>(o[t.c]=(o[t.c]||0)+1,o),{})).filter(x=>cat(x[0])).sort((a,b)=>b[1]-a[1]).slice(0,6);
+return`<h2>${F.id?'Edit expense':'Add expense'}</h2>${fr.length&&!F.id?`<small>Quick add</small><div class=chips>${fr.map(x=>`<button onclick=qa(${x[0]})>${E(cat(x[0]).n)}</button>`).join('')}</div>`:''}<div class=card>${h}<small>${F.c?E(path(F.c)):'Pick a category'}</small>
+Amount (${S.cur||'PKR'})<input id=fa type=number inputmode=decimal value="${F.a||''}">Quantity (optional)<input id=fq type=number inputmode=decimal value="${F.q||''}" oninput=calc()>Unit price (optional)<input id=fu type=number inputmode=decimal value="${F.u||''}" oninput=calc()>Purchase date<input id=fd type=date value="${F.d}">Notes (optional)<input id=fn value="${E(F.n||'')}"><button class="bt full" onclick=stx()>Save expense</button></div>`}
+async function stx(){grab();const a=+F.a;if(!(a>0))return toast('Enter an amount');if(!F.c)return toast('Pick a category');if(!F.d)return toast('Pick a date');const t={c:F.c,a,q:+F.q||0,u:+F.u||0,d:F.d,n:F.n||''};if(F.id)t.id=F.id;await put('tx',t);txs=await all('tx');F=null;tab='dash';render();toast('Saved')}
+const etx=id=>{cl();form(txs.find(t=>t.id==id))};async function dtx(id){if(!confirm('Delete this transaction?'))return;await rm('tx',id);txs=await all('tx');cl();render()}
+const txrow=t=>`<div class=row><span>${dd(t.d)} · ${E(path(t.c))}<br><small>${t.q?t.q+' × '+t.u+' ':''}${E(t.n||'')}</small></span><b>${M(t.a)}</b><button onclick=etx(${t.id})>✎</button><button onclick=dtx(${t.id})>🗑</button></div>`;
+// reports
+function repv(){const[a,b]=range(per),l=inR(a,b),tot=sum(l),n=days(a,b),t=today(),leaf=cats.filter(c=>!kids(c.id).length).map(c=>[path(c.id),spent(c.id,a,b)]).filter(x=>x[1]>0).sort((x,y)=>y[1]-x[1]),
+top=cats.filter(c=>!c.p).map(c=>[c.n,spent(c.id,a,b)]).filter(x=>x[1]>0).sort((x,y)=>y[1]-x[1]),mo=per=='month'||per=='lmonth',bv=mo?cats.filter(c=>c.b>0).map(c=>`<div class=hb><span>${E(path(c.id))}</span><b>${M(spent(c.id,a,b))} / ${M(c.b)}</b></div>${prog(spent(c.id,a,b),c.b)}`).join(''):'';
+let h=l.filter(x=>(!H.q||(path(x.c)+' '+x.n).toLowerCase().includes(H.q.toLowerCase()))&&(!H.c||desc(+H.c).has(x.c))&&(!H.lo||x.a>=+H.lo)&&(!H.hi||x.a<=+H.hi));h.sort((x,y)=>H.s=='o'?x.d.localeCompare(y.d):y.d.localeCompare(x.d));
+return`<h2>Reports</h2>${psel()}<div class=g><div class=card><small>Total</small><br><b>${M(tot)}</b></div><div class=card><small>Daily average</small><br><b>${M(tot/n)}</b></div><div class=card><small>Weekly average</small><br><b>${M(tot/n*7)}</b></div><div class=card><small>Monthly average</small><br><b>${M(tot/n*30.44)}</b></div></div>
+<div class=card><h3>By main category</h3>${hb(top)}</div><div class=card><h3>By product / item</h3>${hb(leaf)}</div><div class=card><h3>Highest 5</h3>${hb(leaf.slice(0,5))}<h3>Lowest 5</h3>${hb(leaf.slice(-5).reverse())}</div>
+<div class=card><h3>Budget vs actual</h3>${bv||'<p class=mu>Shown for This month / Last month, using category budgets.</p>'}</div>
+<div class=card><h3>Transactions (${h.length})</h3><input type=search placeholder="Search" value="${E(H.q)}" onchange="H.q=this.value;render()"><select onchange="H.c=this.value;render()"><option value="">All categories</option>${cats.map(c=>`<option value=${c.id} ${H.c==c.id?'selected':''}>${E(path(c.id))}</option>`).join('')}</select><div class=g><input type=number placeholder="Min amount" value="${H.lo}" onchange="H.lo=this.value;render()"><input type=number placeholder="Max amount" value="${H.hi}" onchange="H.hi=this.value;render()"></div><select onchange="H.s=this.value;render()"><option value=n>Newest first</option><option value=o ${H.s=='o'?'selected':''}>Oldest first</option></select>
+<p><b>Shown total ${M(sum(h))}</b></p>${h.map(txrow).join('')||'<p class=mu>No transactions.</p>'}<button class=full onclick=csv()>Export all transactions (CSV)</button></div>`}
+const csv=()=>dl('expenses-'+today()+'.csv','Date,Category,Quantity,Unit price,Amount,Notes\n'+[...txs].sort((a,b)=>a.d.localeCompare(b.d)).map(t=>[dd(t.d),'"'+path(t.c).replace(/"/g,'""')+'"',t.q||'',t.u||'',t.a,'"'+(t.n||'').replace(/"/g,'""')+'"'].join(',')).join('\n'),'text/csv');
+// settings, backup
+const bin=(k,l)=>`${l}<input type=number inputmode=decimal value="${S[k]||''}" onchange="S[k_='${k}']=+this.value;save()">`;
+function setv(){return`<h2>Settings</h2><div class=card><h3>Budgets</h3>${bin('bd','Daily spending target')}${bin('bw','Weekly budget')}${bin('bm','Monthly household budget')}${bin('by','Annual household budget')}<small>Set category budgets by editing a category.</small></div>
+<div class=card><h3>Display</h3>Theme<select onchange="S.th=this.value;save();render()"><option value=light>Light</option><option value=dark ${S.th=='dark'?'selected':''}>Dark</option></select>Currency label<input value="${E(S.cur||'PKR')}" onchange="S.cur=this.value||'PKR';save();render()"><small>Dates are DD-MM-YYYY, timezone Asia/Karachi.</small></div>
+<div class=card><h3>Data</h3><button class=full onclick=bk()>Backup all data (file)</button><label class=mu>Restore from backup file<input type=file accept=".json" onchange="rs(this.files[0])"></label><button class=full onclick=csv()>Export transactions (CSV)</button><button class=full onclick=seed()>Add starter categories</button><button class="full dg" onclick=clr()>Clear all data</button></div>`}
+const bk=()=>dl('expenses-backup-'+today()+'.json',JSON.stringify({v:1,cats,txs,S}),'application/json'),wipe=async()=>{for(const s of['cats','tx'])await rq(R(s,'readwrite').clear())};
+async function rs(f){if(!f)return;let j;try{j=JSON.parse(await f.text())}catch(e){}if(!j||!j.cats||!j.txs)return alert('This is not a valid backup file.');if(!confirm('Replace ALL current data with this backup?'))return;await wipe();for(const c of j.cats)await put('cats',c);for(const t of j.txs)await put('tx',t);S=j.S||{};await save();await load();render();toast('Restored')}
+async function clr(){if(prompt('Type DELETE to erase every category and expense')!='DELETE')return;await wipe();S={th:S.th};await save();await load();render()}
+const SEED=`Groceries|🛒
+-Dairy Products
+--Milk
+--Yogurt
+--Butter
+--Cheese
+-Vegetables
+--Potatoes
+--Tomatoes
+--Onions
+-Fruits
+--Apples
+--Bananas
+--Oranges
+-Meat
+--Chicken
+--Beef
+--Mutton
+-Other Grocery Items
+Utilities|💡
+-Electricity
+-Gas
+-Water
+-Internet
+-Mobile Packages
+Transportation|🚗
+-Petrol
+-Public Transport
+-Bike Maintenance
+-Car Maintenance
+Healthcare|💊
+-Medicines
+-Doctor Fees
+-Medical Tests
+Household|🏠
+-Cleaning Products
+-Kitchen Supplies
+-Furniture
+-Repairs
+Personal Expenses|👤
+-Clothing
+-Shoes
+-Haircuts
+-Personal Care
+Education|📚
+-School Fees
+-Books
+-Stationery
+-Tuition
+Entertainment|🎬
+-Restaurants
+-Movies
+-Family Outings
+Other Expenses|📦`;
+async function seed(){const st=[];let n=0,k=0,col;for(const ln of SEED.split('\n')){const m=ln.match(/^(-*)([^|]+)\|?(.*)$/),d=m[1].length;if(!d)col=pal[k++%pal.length];st[d]=await put('cats',{n:m[2],p:d?st[d-1]:0,o:n++,col,i:m[3],b:0})}await load();render();toast('Starter categories added')}
+const render=()=>{document.body.dataset.t=S.th||'light';$('#nav').innerHTML=[['dash','📊','Home'],['cats','🗂','Categories'],['add','＋','Add'],['rep','📈','Reports'],['set','⚙️','Settings']].map(x=>`<button class="${tab==x[0]?'on':''}" onclick="go('${x[0]}')"><span>${x[1]}</span>${x[2]}</button>`).join('');$('#v').innerHTML={dash,cats:catv,add:addv,rep:repv,set:setv}[tab]()};
+const go=t=>{if(t=='add'&&tab!='add')F=null;tab=t;render();scrollTo(0,0)};
+(async()=>{D=await new Promise((o,e)=>{const r=indexedDB.open('home-expenses',1);r.onupgradeneeded=()=>{const d=r.result;d.createObjectStore('cats',{keyPath:'id',autoIncrement:true});d.createObjectStore('tx',{keyPath:'id',autoIncrement:true});d.createObjectStore('kv',{keyPath:'k'})};r.onsuccess=()=>o(r.result);r.onerror=()=>e(r.error)});await load();render();navigator.storage&&navigator.storage.persist&&navigator.storage.persist();if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{})})();
+</script></body></html>
